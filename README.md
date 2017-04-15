@@ -1,12 +1,12 @@
 # letudiant-cli-offer-scrapper
 
-** Necessity is the mother of invention.**
+**Necessity is the mother of invention.**
 
 I had the idea of writing this utility script when I was fed up with checking every time if there were any new internship offers available that suit my needs.
 
 This Python script fetches available internship offers based on the users' criteria from the letudiant.fr, a famous French magazine dedicated to students. It then displays the results on the terminal:
 
-![alt tag](https://github.com/Marrakchino/letudiant-cli-offer-scrapper/blob/master/screenshot_2017-04-05%2010:36:10.png)
+![alt tag](https://raw.githubusercontent.com/Marrakchino/letudiant-cli-offer-scrapper/master/res/Capture%20du%202017-04-15%2017%3A29%3A24.png)
 
 # Install
 
