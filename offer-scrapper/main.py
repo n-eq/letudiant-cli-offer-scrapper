@@ -5,6 +5,7 @@
 from bs4 import BeautifulSoup
 import urllib
 import sys
+import subprocess as sp
 
 from utils import Colors
 from args import Args
@@ -25,6 +26,7 @@ if args.number_of_pages != None and args.number_of_days != None:
     exit(1)
 
 def parse_pages(n, filter=[]):
+    sp.call('clear', shell=True)
     global p
     global URL
     i = 0
