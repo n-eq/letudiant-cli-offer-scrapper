@@ -39,3 +39,8 @@ $ python main.py
 $ python main.py --pages 5 --interactive
 
 ```
+
+### Interactive mode
+
+The interactive mode enables the user to access the offer details by indicating its number. The program then displays on the terminal the details (salary, duration, expectations ...) and waits for another input.
+![alt tag](https://raw.githubusercontent.com/Marrakchino/letudiant-cli-offer-scrapper/master/res/interactive_mode.png)
