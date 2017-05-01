@@ -17,13 +17,14 @@ class Args():
                 help='Enable interactive mode.')
 
         # Number of pages
-        p.add_argument('--pages', type=int, 
+        p.add_argument('--pages', type=int, default=1,
                 help='Number of pages to parse (1 by default).')
 
         # New
         p.add_argument('--new', action='store_true',
                 help='Display only new offers (compared to a log file).')
 
+        # Filters
         p.add_argument('--filter', action='append',
                 help='Add filters to the gathered offers.')
 
