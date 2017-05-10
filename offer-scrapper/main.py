@@ -1,6 +1,5 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# author: marrakchino
 
 from bs4 import BeautifulSoup
 import urllib
