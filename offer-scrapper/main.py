@@ -108,7 +108,7 @@ def parse_pages(n, filter=[], new=False, interactive=False):
             
         while (True):
             query=raw_input(Colors.UNDERLINE + "Enter your query (q to quit):" + Colors.ENDC + " ")
-            if (query == "q"):
+            if (query.lower() == "q"):
                 break
             else:
                 if (int(query) < 10 * n):
