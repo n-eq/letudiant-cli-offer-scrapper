@@ -9,13 +9,15 @@ import difflib
 import shutil
 import re
 import random
+import pickle
 
 from utils import Colors
 from args import Args
 
 p=1
 URL="http://jobs-stages.letudiant.fr/stages-etudiants/offres/domaines-103_129_165_111/niveaux-3_2_9/page-" + str(p) + ".html"
-result_file="../.results.txt"
+result_file="/home/marrakchino/github/letudiant-offers-scrapper/.results.txt"
+tmp_result_file="/home/marrakchino/github/letudiant-offers-scrapper/.results.txt.tmp"
 args = Args()
 
 def next_page():
@@ -29,12 +31,13 @@ if args.number_of_pages != None and args.number_of_days != None:
     exit(1)
 
 def parse_pages(n, filter=[], new=False, interactive=False):
-    f=os.open(result_file, os.O_RDWR|os.O_CREAT|os.O_APPEND)
-    new_f=os.open(result_file + ".tmp", os.O_RDWR|os.O_CREAT)
-    sp.call('clear', shell=True)
+#     sp.call('clear', shell=True)
     print(vars(args)) #DEBUG
+
     global p
     global URL
+
+    offers_ready_to_be_dumped=[[] for _ in range(n * 10)]
     i = 0
     offer_url_list=[]
     while p <= n:
@@ -50,47 +53,75 @@ def parse_pages(n, filter=[], new=False, interactive=False):
             print("The number of offers doesn't correspond to the number of companies")
             exit(1)
 
-        print(Colors.HEADER + "Page " + str(p))
         while i < p * len(offer_titles):
+            print("i=" + str(i) + ", p * lenoffer... =" + str(p*len(offer_titles)))
             title=offer_titles[i / p].text
             company=offer_companies[i / p].text
             location=offer_locations[i / p].text
 
             # silence 'not-so-exciting' offers' locations
-            if len(location) > 25:
+            if len(location) > 35:
                 location=location.split(",", 1)[0] + " ..."
+
             # no need for the publication date
             if title.find("Publi") != -1:
                 title=title[:title.find("Publi") - 1]
 
-            tmp_result=Colors.GREEN + "[" + str(i) + "]" + Colors.BOLD + company + Colors.ENDC + Colors.GREEN + title + Colors.BLUE + location + Colors.ENDC
+            def replace_accents(s):
+                s.replace(u"é", "e")
+                s.replace(u"è", "e")
+                s.replace(u"ê", "e")
+                s.replace(u"â", "a")
+                s.replace(u"à", "a")
+                s.replace(u"û", "u")
+                s.replace(u"î", "i")
+                s.replace(u"ô", "o")
+                return s
 
-            def write_results():
-                os.write(os.open(result_file + ".tmp", os.O_RDWR|os.O_APPEND|os.O_CREAT), (tmp_result + "\n").encode('utf-8'))
-#                 if not new:
-#                     print(tmp_result)
+            # offers are appended in their order of display
+            offers_ready_to_be_dumped[i].append(replace_accents(company))
+            offers_ready_to_be_dumped[i].append(replace_accents(title))
+            offers_ready_to_be_dumped[i].append(replace_accents(location))
+
+            def dump_results():
+                pickle.dump(offers_ready_to_be_dumped, open(tmp_result_file, "wb"))
 
             def show_results():
+                #TODO: FIX
                 if new:
-                    # TODO: not working
-                    diff=difflib.ndiff(os.read(os.open(result_file + ".tmp", os.O_RDWR|os.O_APPEND|os.O_CREAT), 10), os.read(f, 10))
-                    print ''.join(diff)
+                    previous_content = pickle.load(open(result_file, "rb"))
+                    fresh_content = pickle.load(open(tmp_result_file, "rb"))
+                    for offer in [off for off in previous_content+fresh_content if (off not in fresh_content) or (off not in previous_content)]:
+                        tmp_result=Colors.GREEN + "[" +  "]" + Colors.BOLD + offer[0] + Colors.ENDC + Colors.GREEN + offer[1] + Colors.BLUE + offer[2] + Colors.ENDC
+                        print(tmp_result)
                             
                 else:
-                    os.rename(result_file + ".tmp", result_file)
-                    sp.call("cat " + result_file, shell=True)
-            
-            if filter != None:
-                for f in filter:
-                    if f in title:    
-                        write_results()
-            else:
-                write_results()
+                    dumped_content=pickle.load(open(tmp_result_file, "rb"))
+                    os.rename(tmp_result_file, result_file)
 
+                    if filter == None:
+                        for i in range(len(dumped_content)):
+                            if i % 10 == 0:
+                                print(Colors.HEADER + "Page" + str(i / 10 + 1))
+
+                            tmp_result=Colors.GREEN + "[" + str(i) + "]" + Colors.BOLD + dumped_content[i][0] + Colors.ENDC + Colors.GREEN + dumped_content[i][1] + Colors.BLUE + dumped_content[i][2] + Colors.ENDC
+                            print(tmp_result)
+
+                    else:
+                        for i in range(len(dumped_content)):
+                            if i % 10 == 0:
+                                print(Colors.HEADER + "Page" + str(i / 10 + 1))
+                            for f in filter:
+                                if f in dumped_content[i][1].lower() or f in dumped_content[i][2].lower():
+                                    tmp_result=Colors.GREEN + "[" + str(i) + "]" + Colors.BOLD + dumped_content[i][0] + Colors.ENDC + Colors.GREEN + dumped_content[i][1] + Colors.BLUE + dumped_content[i][2] + Colors.ENDC
+                                    print(tmp_result)
+                                
             i += 1
-            show_results()
 
         next_page()
+
+    dump_results()
+    show_results()
 
     if interactive:
         def select_offer(query):
@@ -115,6 +146,11 @@ def parse_pages(n, filter=[], new=False, interactive=False):
                     select_offer(query)
                 else:
                     print("Wrong number, try again.")
+
+
+    # clear temporary file
+    if os.path.exists(tmp_result_file):
+        os.remove(tmp_result_file)
 
 
 def parse_days(n, filter=[]):
