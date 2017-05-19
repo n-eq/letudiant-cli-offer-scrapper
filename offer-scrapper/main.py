@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from math import ceil
 from bs4 import BeautifulSoup
 import urllib
 import sys, os
@@ -14,17 +15,17 @@ import pickle
 from utils import Colors
 from args import Args
 
-p=1
-URL="http://jobs-stages.letudiant.fr/stages-etudiants/offres/domaines-103_129_165_111/niveaux-3_2_9/page-" + str(p) + ".html"
+page=1
+URL="http://jobs-stages.letudiant.fr/stages-etudiants/offres/domaines-103_129_165_111/niveaux-3_2_9/page-" + str(page) + ".html"
 result_file="/home/marrakchino/github/letudiant-offers-scrapper/.results.txt"
 tmp_result_file="/home/marrakchino/github/letudiant-offers-scrapper/.results.txt.tmp"
 args = Args()
 
 def next_page():
     global URL
-    global p
-    URL=URL.replace("page-" + str(p), "page-" + str(p+1))
-    p += 1
+    global page
+    URL=URL.replace("page-" + str(page), "page-" + str(page+1))
+    page += 1
 
 if args.number_of_pages != None and args.number_of_days != None:
     print("You can only specify a number of pages or a number of days, incompatible arguments.")
@@ -32,15 +33,14 @@ if args.number_of_pages != None and args.number_of_days != None:
 
 def parse_pages(n, filter=[], new=False, interactive=False):
 #     sp.call('clear', shell=True)
-    print(vars(args)) #DEBUG
 
-    global p
+    global page
     global URL
 
     offers_ready_to_be_dumped=[[] for _ in range(n * 10)]
-    i = 0
+    offer_i = 0
     offer_url_list=[]
-    while p <= n:
+    while page <= n:
         r=urllib.urlopen(URL)
         soup=BeautifulSoup(r)
 
@@ -53,11 +53,12 @@ def parse_pages(n, filter=[], new=False, interactive=False):
             print("The number of offers doesn't correspond to the number of companies")
             exit(1)
 
-        while i < p * len(offer_titles):
-            print("i=" + str(i) + ", p * lenoffer... =" + str(p*len(offer_titles)))
-            title=offer_titles[i / p].text
-            company=offer_companies[i / p].text
-            location=offer_locations[i / p].text
+        k=0
+        while k < len(offer_titles):
+            title=offer_titles[k].text
+            company=offer_companies[k].text
+            location=offer_locations[k].text
+            k+=1
 
             # silence 'not-so-exciting' offers' locations
             if len(location) > 35:
@@ -74,14 +75,15 @@ def parse_pages(n, filter=[], new=False, interactive=False):
                 s.replace(u"â", "a")
                 s.replace(u"à", "a")
                 s.replace(u"û", "u")
-                s.replace(u"î", "i")
+                s.replace(u"î", "offer_i")
                 s.replace(u"ô", "o")
                 return s
 
             # offers are appended in their order of display
-            offers_ready_to_be_dumped[i].append(replace_accents(company))
-            offers_ready_to_be_dumped[i].append(replace_accents(title))
-            offers_ready_to_be_dumped[i].append(replace_accents(location))
+            offers_ready_to_be_dumped[offer_i].append(replace_accents(company))
+            offers_ready_to_be_dumped[offer_i].append(replace_accents(title))
+            offers_ready_to_be_dumped[offer_i].append(replace_accents(location))
+
 
             def dump_results():
                 pickle.dump(offers_ready_to_be_dumped, open(tmp_result_file, "wb"))
@@ -100,23 +102,23 @@ def parse_pages(n, filter=[], new=False, interactive=False):
                     os.rename(tmp_result_file, result_file)
 
                     if filter == None:
-                        for i in range(len(dumped_content)):
-                            if i % 10 == 0:
-                                print(Colors.HEADER + "Page" + str(i / 10 + 1))
+                        for offer_i in range(len(dumped_content)):
+                            if offer_i % 10 == 0:
+                                print(Colors.HEADER + "Page" + str(offer_i / 10 + 1))
 
-                            tmp_result=Colors.GREEN + "[" + str(i) + "]" + Colors.BOLD + dumped_content[i][0] + Colors.ENDC + Colors.GREEN + dumped_content[i][1] + Colors.BLUE + dumped_content[i][2] + Colors.ENDC
+                            tmp_result=Colors.GREEN + "[" + str(offer_i) + "]" + Colors.BOLD + dumped_content[offer_i][0] + Colors.ENDC + Colors.GREEN + dumped_content[offer_i][1] + Colors.BLUE + dumped_content[offer_i][2] + Colors.ENDC
                             print(tmp_result)
 
                     else:
-                        for i in range(len(dumped_content)):
-                            if i % 10 == 0:
-                                print(Colors.HEADER + "Page" + str(i / 10 + 1))
+                        for offer_i in range(len(dumped_content)):
+                            if offer_i % 10 == 0:
+                                print(Colors.HEADER + "Page" + str(offer_i / 10 + 1))
                             for f in filter:
-                                if f in dumped_content[i][1].lower() or f in dumped_content[i][2].lower():
-                                    tmp_result=Colors.GREEN + "[" + str(i) + "]" + Colors.BOLD + dumped_content[i][0] + Colors.ENDC + Colors.GREEN + dumped_content[i][1] + Colors.BLUE + dumped_content[i][2] + Colors.ENDC
+                                if f in dumped_content[offer_i][1].lower() or f in dumped_content[offer_i][2].lower():
+                                    tmp_result=Colors.GREEN + "[" + str(offer_i) + "]" + Colors.BOLD + dumped_content[offer_i][0] + Colors.ENDC + Colors.GREEN + dumped_content[offer_i][1] + Colors.BLUE + dumped_content[offer_i][2] + Colors.ENDC
                                     print(tmp_result)
                                 
-            i += 1
+            offer_i += 1
 
         next_page()
 
@@ -132,8 +134,8 @@ def parse_pages(n, filter=[], new=False, interactive=False):
             paragraphs=r_soup.find_all('h5', text=False)
 
             print("=" * 150)
-            for l in range(len(r_soup.find_all('p'))):
-                print(Colors.YELLOW + (r_soup.find_all('p')[l].text) + Colors.ENDC)
+            for l in range(len(r_soup.find_all('page'))):
+                print(Colors.YELLOW + (r_soup.find_all('page')[l].text) + Colors.ENDC)
             print("=" * 150)
 
             
