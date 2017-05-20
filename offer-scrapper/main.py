@@ -32,7 +32,6 @@ if args.number_of_pages != None and args.number_of_days != None:
     exit(1)
 
 def parse_pages(n, filter=[], new=False, interactive=False):
-#     sp.call('clear', shell=True)
 
     global page
     global URL
@@ -130,11 +129,13 @@ def parse_pages(n, filter=[], new=False, interactive=False):
             offer_url=re.sub(r"\/stages-etudiants.*", offer_url_list[int(query)], URL)
             r_offer=urllib.urlopen(offer_url)
             r_soup=BeautifulSoup(r_offer)
-            paragraphs=r_soup.find_all('h5', text=False)
+            
+            # Unused
+            # paragraphs=r_soup.find_all('h5', text=False)
 
             print("=" * 150)
-            for l in range(len(r_soup.find_all('page'))):
-                print(Colors.YELLOW + (r_soup.find_all('page')[l].text) + Colors.ENDC)
+            for l in range(len(r_soup.find_all('p'))):
+                print(Colors.YELLOW + (r_soup.find_all('p')[l].text) + Colors.ENDC)
             print("=" * 150)
 
             
@@ -147,7 +148,6 @@ def parse_pages(n, filter=[], new=False, interactive=False):
                     select_offer(query)
                 else:
                     print("Wrong number, try again.")
-
 
     # clear temporary file
     if os.path.exists(tmp_result_file):
