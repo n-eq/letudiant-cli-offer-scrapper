@@ -127,8 +127,7 @@ def parse_pages(n, filter=[], new=False, interactive=False):
 
     if interactive:
         def select_offer(query):
-            # TODO: find a better way to extract the url (maybe replace a pattern!)
-            offer_url=URL[:31] + offer_url_list[int(query)]
+            offer_url=re.sub(r"\/stages-etudiants.*", offer_url_list[int(query)], URL)
             r_offer=urllib.urlopen(offer_url)
             r_soup=BeautifulSoup(r_offer)
             paragraphs=r_soup.find_all('h5', text=False)
