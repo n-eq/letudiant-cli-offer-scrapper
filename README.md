@@ -16,12 +16,13 @@ git clone https://github.com/marrakchino/letudiant-cli-offer-scrapper.git
 
 ## Configuration
 
-The only thing you need to configure is the URL from which you extract job offers. After doing a search based on your criteria,
-the website redirects you to a page similar to this: 
+There's some configuration that needs to be done (by hand, I'll create a script or so to automate the thing one day).
 
+You need to choose the URL from which you want to extract job offers, it's something similar to this:
 http://jobs-stages.letudiant.fr/stages-etudiants/offres/domaines-103_129_165_111/niveaux-3_2_9/page-1.html
+This variable should be stored as`URL` in `offer-scrapper/main.py`.
 
-Once there, you store this variable as`URL` in `offer-scrapper/main.py`.
+Additionally, you need to choose a location for the `results` file (used for a `--new`less execution)
 
 ## Usage
 ```sh
@@ -55,3 +56,14 @@ The interactive mode enables the user to access the offer details by indicating 
 
 
 ![alt tag](https://raw.githubusercontent.com/Marrakchino/letudiant-cli-offer-scrapper/master/res/interactive_mode.png)
+
+
+### Notes
+
+* This software is far from being efficient, this was not my goal when I started 
+developing it. Some operations are poorly developed and clearly unoptimized.
+
+* letudiant.fr's pages are subject to modifications. In particular, HTML `tags`
+and class names may differ from a version to another. Therefore, this software is
+not guaranteed to be 100% functional. Some minor code tweaks may be needed 
+in order to adapt to such changes.

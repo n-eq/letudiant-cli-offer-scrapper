@@ -1,15 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from math import ceil
 from bs4 import BeautifulSoup
 import urllib
 import sys, os
-import subprocess as sp
-import difflib
-import shutil
 import re
-import random
 import pickle
 
 from utils import Colors
@@ -20,6 +15,62 @@ URL="http://jobs-stages.letudiant.fr/stages-etudiants/offres/domaines-103_129_16
 result_file="/home/marrakchino/github/letudiant-offers-scrapper/.results.txt"
 tmp_result_file="/home/marrakchino/github/letudiant-offers-scrapper/.results.txt.tmp"
 args = Args()
+
+def replace_accents(s):
+    replacements = {u"é": "e", u"è": "e", u"ê": "e", u"à": "a", u"â": "a", u"î": "i", u"û": "u", u"ô": "o"}
+    for c in replacements.keys():
+        s.replace(c, replacements[c])
+    return s
+
+def dump_content(offers_to_dump, destination):
+    pickle.dump(offers_to_dump, open(destination, "wb"))
+
+def display_results(new, filter):
+    results_to_show=[]
+    if new:
+        previous_content = pickle.load(open(result_file, "rb"))
+        fresh_content = pickle.load(open(tmp_result_file, "rb"))
+        offers = [off for off in previous_content + fresh_content if (off not in fresh_content) or (off not in previous_content)]
+        offers_list = offers
+    else:
+        dumped_content=pickle.load(open(tmp_result_file, "rb"))
+        os.rename(tmp_result_file, result_file)
+        offers_list = dumped_content
+
+    max_company_name_len = 0
+    max_offer_title_len = 0
+    for elt in offers_list:
+        if len(elt[0]) > max_company_name_len:
+            max_company_name_len = len(elt[0])
+        if len(elt[1]) > max_offer_title_len:
+            max_offer_title_len = len(elt[1])
+
+    if filter == None:
+        for offer in range(len(offers_list)):
+            if offer % 10 == 0:
+                print(Colors.HEADER + "Page " + str(offer / 10 + 1))
+
+            print(Colors.HEADER + "[" + str(offer) + "]" + Colors.BOLD +
+            offers_list[offer][0] + 
+            " " * (max_company_name_len - len(offers_list[offer][0]))+ 
+            Colors.ENDC + Colors.GREEN + offers_list[offer][1] + 
+            " " * (max_offer_title_len - len(offers_list[offer][1]))+ 
+            Colors.BLUE + offers_list[offer][2] + Colors.ENDC)
+
+    else:
+        for offer in range(len(offers_list)):
+            for f in filter:
+                # grep 'f' in [1] (company name) or [2] (offer title)
+                if f.lower() in offers_list[offer][1].lower() or f.lower() in dumped_content[offer][2].lower():
+                    if offer % 10 == 0:
+                        print(Colors.HEADER + "Page " + str(offer / 10 + 1))
+
+                    print(Colors.HEADER + "[" + str(offer) + "]" + Colors.BOLD +
+                    offers_list[offer][0] + 
+                    " " * (max_company_name_len - len(offers_list[offer][0]))+ 
+                    Colors.ENDC + Colors.GREEN + offers_list[offer][1] + 
+                    " " * (max_offer_title_len - len(offers_list[offer][1]))+ 
+                    Colors.BLUE + offers_list[offer][2] + Colors.ENDC)
 
 def next_page():
     global URL
@@ -36,22 +87,25 @@ def parse_pages(n, filter=[], new=False, interactive=False):
     global page
     global URL
 
-    offers_ready_to_be_dumped=[[] for _ in range(n * 10)]
     offer_i = 0
     offer_url_list=[]
+    offers_ready_to_be_dumped=[[] for _ in range(n * 10)]
+
     while page <= n:
         r=urllib.urlopen(URL)
-        soup=BeautifulSoup(r)
+        soup=BeautifulSoup(r, 'lxml')
 
+        # extract information using tags and class names
         offer_titles=soup.find_all("a", class_="c-search-result__title")
         offer_url_list.extend([offer_titles[j]['href'] for j in range(len(offer_titles))])
-        offer_companies=soup.find_all("span", class_="  ")
-        offer_locations=soup.find_all("span", class_="  u-typo-italic ")
+        offer_companies=soup.find_all("span", class_=" ")
+        offer_locations=soup.find_all("span", class_=" u-typo-italic ")
         
         if len(offer_titles) != len(offer_companies):
-            print("The number of offers doesn't correspond to the number of companies")
+            print("The number of offers (" + str(len(offer_titles)) + ") doesn't correspond to the number of companies (" + str(len(offer_companies)) + ")")
             exit(1)
 
+        # loop over found offers
         k=0
         while k < len(offer_titles):
             title=offer_titles[k].text
@@ -67,68 +121,23 @@ def parse_pages(n, filter=[], new=False, interactive=False):
             if title.find("Publi") != -1:
                 title=title[:title.find("Publi") - 1]
 
-            def replace_accents(s):
-                s.replace(u"é", "e")
-                s.replace(u"è", "e")
-                s.replace(u"ê", "e")
-                s.replace(u"â", "a")
-                s.replace(u"à", "a")
-                s.replace(u"û", "u")
-                s.replace(u"î", "offer_i")
-                s.replace(u"ô", "o")
-                return s
-
             # offers are appended in their order of display
             offers_ready_to_be_dumped[offer_i].append(replace_accents(company))
             offers_ready_to_be_dumped[offer_i].append(replace_accents(title))
             offers_ready_to_be_dumped[offer_i].append(replace_accents(location))
 
-
-            def dump_results():
-                pickle.dump(offers_ready_to_be_dumped, open(tmp_result_file, "wb"))
-
-            def show_results():
-                #TODO: FIX
-                if new:
-                    previous_content = pickle.load(open(result_file, "rb"))
-                    fresh_content = pickle.load(open(tmp_result_file, "rb"))
-                    for offer in [off for off in previous_content+fresh_content if (off not in fresh_content) or (off not in previous_content)]:
-                        tmp_result=Colors.GREEN + "[" +  "]" + Colors.BOLD + offer[0] + Colors.ENDC + Colors.GREEN + offer[1] + Colors.BLUE + offer[2] + Colors.ENDC
-                        print(tmp_result)
-                            
-                else:
-                    dumped_content=pickle.load(open(tmp_result_file, "rb"))
-                    os.rename(tmp_result_file, result_file)
-
-                    if filter == None:
-                        for offer_i in range(len(dumped_content)):
-                            if offer_i % 10 == 0:
-                                print(Colors.HEADER + "Page" + str(offer_i / 10 + 1))
-
-                            tmp_result=Colors.GREEN + "[" + str(offer_i) + "]" + Colors.BOLD + dumped_content[offer_i][0] + Colors.ENDC + Colors.GREEN + dumped_content[offer_i][1] + Colors.BLUE + dumped_content[offer_i][2] + Colors.ENDC
-                            print(tmp_result)
-
-                    else:
-                        for offer_i in range(len(dumped_content)):
-                            if offer_i % 10 == 0:
-                                print(Colors.HEADER + "Page" + str(offer_i / 10 + 1))
-                            for f in filter:
-                                if f in dumped_content[offer_i][1].lower() or f in dumped_content[offer_i][2].lower():
-                                    tmp_result=Colors.GREEN + "[" + str(offer_i) + "]" + Colors.BOLD + dumped_content[offer_i][0] + Colors.ENDC + Colors.GREEN + dumped_content[offer_i][1] + Colors.BLUE + dumped_content[offer_i][2] + Colors.ENDC
-                                    print(tmp_result)
-                                
             offer_i += 1
 
         next_page()
 
-    dump_results()
-    show_results()
+    dump_content(offers_ready_to_be_dumped[:offer_i], tmp_result_file)
+    display_results(new, filter)
 
     if interactive:
         def select_offer(query):
             offer_url=re.sub(r"\/stages-etudiants.*", offer_url_list[int(query)], URL)
             r_offer=urllib.urlopen(offer_url)
-            r_soup=BeautifulSoup(r_offer)
+            r_soup=BeautifulSoup(r_offer, "lxml")
             
             # Unused
             # paragraphs=r_soup.find_all('h5', text=False)
