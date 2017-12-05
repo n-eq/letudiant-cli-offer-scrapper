@@ -30,7 +30,6 @@ import sys, os
 import re
 import pickle
 
-from utils import Colors
 from args import Args
 
 page=1
@@ -38,6 +37,19 @@ URL="http://jobs-stages.letudiant.fr/stages-etudiants/offres/domaines-103_129_16
 result_file="/home/marrakchino/github/letudiant-offers-scrapper/.results.txt"
 tmp_result_file="/home/marrakchino/github/letudiant-offers-scrapper/.results.txt.tmp"
 args = Args()
+
+if args.number_of_pages != None and args.number_of_days != None:
+    print("You can either specify a number of pages or a number of days, incompatible arguments.")
+    exit(1)
+
+
+class Colors():
+    HEADER = '\033[95m'
+    BLUE = '\033[94m'
+    GREEN = '\033[32m'
+    YELLOW = '\033[33m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
 
 def replace_accents(s):
     replacements = {u"é": "e", u"è": "e", u"ê": "e", u"à": "a", u"â": "a", u"î": "i", u"û": "u", u"ô": "o"}
@@ -101,12 +113,7 @@ def next_page():
     URL=URL.replace("page-" + str(page), "page-" + str(page+1))
     page += 1
 
-if args.number_of_pages != None and args.number_of_days != None:
-    print("You can only specify a number of pages or a number of days, incompatible arguments.")
-    exit(1)
-
 def parse_pages(n, filter=[], new=False, interactive=False):
-
     global page
     global URL
 
