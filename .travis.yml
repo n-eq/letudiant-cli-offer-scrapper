@@ -1,4 +1,4 @@
 language: sh
 
 script:
-        - shell tests/test.sh
+        - ./tests/test.sh
