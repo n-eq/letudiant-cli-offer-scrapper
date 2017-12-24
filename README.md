@@ -11,7 +11,8 @@ This Python script fetches available internship offers based on the user's crite
 ## Install
 
 ```sh
-git clone https://github.com/marrakchino/letudiant-cli-offer-scrapper.git
+$ git clone https://github.com/marrakchino/letudiant-cli-offer-scrapper.git
+$ pip install -r requirements.txt # (still in **ci** branch)
 ```
 
 ## Configuration
