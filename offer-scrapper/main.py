@@ -99,7 +99,7 @@ def display_results(new, filter):
             " " * (max_company_name_len - len(offers_list[offer].company))+ 
             Colors.ENDC + Colors.GREEN + offers_list[offer].title + 
             " " * (max_offer_title_len - len(offers_list[offer].title))+ 
-            Colors.BLUE + offers_list[offer].location + Colors.ENDC)
+            Colors.BLUE + offers_list[offer].location + Colors.ENDC).encode("utf-8")
 
     else:
         for offer in range(len(offers_list)):
@@ -117,7 +117,7 @@ def display_results(new, filter):
                     " " * (max_company_name_len - len(offers_list[offer].company))+ 
                     Colors.ENDC + Colors.GREEN + offers_list[offer].title + 
                     " " * (max_offer_title_len - len(offers_list[offer].title))+ 
-                    Colors.BLUE + offers_list[offer].location + Colors.ENDC)
+                    Colors.BLUE + offers_list[offer].location + Colors.ENDC).encode("utf-8")
 
 
 def next_page():
