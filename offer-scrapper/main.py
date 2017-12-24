@@ -40,6 +40,7 @@ args = Args()
 
 class Colors:
     HEADER = '\033[95m'
+    DARKBLUE = '\033[34m'
     BLUE = '\033[94m'
     GREEN = '\033[32m'
     YELLOW = '\033[33m'
@@ -91,7 +92,7 @@ def display_results(new, filter):
     if filter == None:
         for offer in range(len(offers_list)):
             if offer % 10 == 0:
-                print(Colors.HEADER + "Page " + str(offer / 10 + 1))
+                print(Colors.DARKBLUE + "Page " + str(offer / 10 + 1))
 
             print(Colors.HEADER + "[" + str(offer) + "]" + 
             offers_list[offer].company + 
@@ -107,7 +108,7 @@ def display_results(new, filter):
             location = offers_list[offer].location.lower().split()
             for f in filter:
                 if offer % 10 == 0:
-                    print(Colors.HEADER + "Page " + str(offer / 10 + 1))
+                    print(Colors.DARKBLUE + "Page " + str(offer / 10 + 1))
                 f = f.lower()
                 if f in title or f in company or f in location:
                     # TODO: use 're' to highlight the found filter keyword (in title, company name, or location)
