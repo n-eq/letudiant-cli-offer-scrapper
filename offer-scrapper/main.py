@@ -3,11 +3,10 @@
 
 from bs4 import BeautifulSoup
 import urllib
-import sys, os
+import os
 import re
 import pickle
 
-from utils import Colors
 from args import Args
 
 page=1
@@ -15,6 +14,27 @@ URL="http://jobs-stages.letudiant.fr/stages-etudiants/offres/domaines-103_129_16
 result_file="/home/marrakchino/github/letudiant-offers-scrapper/.results.txt"
 tmp_result_file="/home/marrakchino/github/letudiant-offers-scrapper/.results.txt.tmp"
 args = Args()
+
+class Colors:
+    HEADER = '\033[95m'
+    BLUE = '\033[94m'
+    GREEN = '\033[32m'
+    YELLOW = '\033[33m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+
+class Offer:
+    def __init__(self, company, title, location, description = None):
+        self.company = company
+        self.title = title
+        self.location = location
+        if (description != None):
+            self.description = description
+        else:
+            self.description = ""
+
+    def __str__(self):
+        return self.company + '({}): {}'.format(self.location, self.description)
 
 def replace_accents(s):
     replacements = {u"é": "e", u"è": "e", u"ê": "e", u"à": "a", u"â": "a", u"î": "i", u"û": "u", u"ô": "o"}
@@ -40,37 +60,40 @@ def display_results(new, filter):
     max_company_name_len = 0
     max_offer_title_len = 0
     for elt in offers_list:
-        if len(elt[0]) > max_company_name_len:
-            max_company_name_len = len(elt[0])
-        if len(elt[1]) > max_offer_title_len:
-            max_offer_title_len = len(elt[1])
+        if len(elt.company) > max_company_name_len:
+            max_company_name_len = len(elt.company)
+        if len(elt.title) > max_offer_title_len:
+            max_offer_title_len = len(elt.title)
 
     if filter == None:
         for offer in range(len(offers_list)):
             if offer % 10 == 0:
                 print(Colors.HEADER + "Page " + str(offer / 10 + 1))
 
-            print(Colors.HEADER + "[" + str(offer) + "]" + Colors.BOLD +
-            offers_list[offer][0] + 
-            " " * (max_company_name_len - len(offers_list[offer][0]))+ 
-            Colors.ENDC + Colors.GREEN + offers_list[offer][1] + 
-            " " * (max_offer_title_len - len(offers_list[offer][1]))+ 
-            Colors.BLUE + offers_list[offer][2] + Colors.ENDC)
+            print(Colors.HEADER + "[" + str(offer) + "]" + 
+            offers_list[offer].company + 
+            " " * (max_company_name_len - len(offers_list[offer].company))+ 
+            Colors.ENDC + Colors.GREEN + offers_list[offer].title + 
+            " " * (max_offer_title_len - len(offers_list[offer].title))+ 
+            Colors.BLUE + offers_list[offer].location + Colors.ENDC)
 
     else:
         for offer in range(len(offers_list)):
+            title = offers_list[offer].title.lower().split()
+            company = offers_list[offer].company.lower().split()
+            location = offers_list[offer].location.lower().split()
             for f in filter:
-                # grep 'f' in [1] (company name) or [2] (offer title)
-                if f.lower() in offers_list[offer][1].lower() or f.lower() in dumped_content[offer][2].lower():
-                    if offer % 10 == 0:
-                        print(Colors.HEADER + "Page " + str(offer / 10 + 1))
+                if offer % 10 == 0:
+                    print(Colors.HEADER + "Page " + str(offer / 10 + 1))
+                f = f.lower()
+                if f in title or f in company or f in location:
+                    print(Colors.HEADER + "[" + str(offer) + "]" + 
+                    offers_list[offer].company + 
+                    " " * (max_company_name_len - len(offers_list[offer].company))+ 
+                    Colors.ENDC + Colors.GREEN + offers_list[offer].title + 
+                    " " * (max_offer_title_len - len(offers_list[offer].title))+ 
+                    Colors.BLUE + offers_list[offer].location + Colors.ENDC)
 
-                    print(Colors.HEADER + "[" + str(offer) + "]" + Colors.BOLD +
-                    offers_list[offer][0] + 
-                    " " * (max_company_name_len - len(offers_list[offer][0]))+ 
-                    Colors.ENDC + Colors.GREEN + offers_list[offer][1] + 
-                    " " * (max_offer_title_len - len(offers_list[offer][1]))+ 
-                    Colors.BLUE + offers_list[offer][2] + Colors.ENDC)
 
 def next_page():
     global URL
@@ -87,9 +110,8 @@ def parse_pages(n, filter=[], new=False, interactive=False):
     global page
     global URL
 
-    offer_i = 0
     offer_url_list=[]
-    offers_ready_to_be_dumped=[[] for _ in range(n * 10)]
+    offers = [] # list of offers
 
     while page <= n:
         r=urllib.urlopen(URL)
@@ -121,16 +143,11 @@ def parse_pages(n, filter=[], new=False, interactive=False):
             if title.find("Publi") != -1:
                 title=title[:title.find("Publi") - 1]
 
-            # offers are appended in their order of display
-            offers_ready_to_be_dumped[offer_i].append(replace_accents(company))
-            offers_ready_to_be_dumped[offer_i].append(replace_accents(title))
-            offers_ready_to_be_dumped[offer_i].append(replace_accents(location))
-
-            offer_i += 1
+            offers.append(Offer(company, title, location))
 
         next_page()
 
-    dump_content(offers_ready_to_be_dumped[:offer_i], tmp_result_file)
+    dump_content(offers, tmp_result_file)
     display_results(new, filter)
 
     if interactive:
@@ -139,9 +156,6 @@ def parse_pages(n, filter=[], new=False, interactive=False):
             r_offer=urllib.urlopen(offer_url)
             r_soup=BeautifulSoup(r_offer, "lxml")
             
-            # Unused
-            # paragraphs=r_soup.find_all('h5', text=False)
-
             print("=" * 150)
             for l in range(len(r_soup.find_all('p'))):
                 print(Colors.YELLOW + (r_soup.find_all('p')[l].text) + Colors.ENDC)
