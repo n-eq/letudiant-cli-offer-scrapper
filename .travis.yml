@@ -1,0 +1,4 @@
+language: sh
+
+script:
+        - shell tests/test.sh
