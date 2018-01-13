@@ -275,6 +275,7 @@ def parse_days(n, filter = [], interactive = False):
             "Please check your internet connection and try again.").format(URL)
             exit(1)
 
+
     if len(offers) == 0:
         exit(1)
     max_company_name_len = max([len(offer.company) for offer in offers])
