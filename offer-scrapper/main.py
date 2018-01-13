@@ -116,8 +116,7 @@ def display_results(new, filter):
                 if offer % 10 == 7:
                     print(Colors.DARKBLUE + "Page " + str(offer / 10 + 2))
 
-                f = f.lower()
-
+                f = f.lower().decode('utf-8')
                 if f in title or f in company or f in location:
                     # TODO: use 're' to highlight the found filter keyword (in title, company name, or location)
                     print(Colors.HEADER + "[" + str(offer) + "]" + 
