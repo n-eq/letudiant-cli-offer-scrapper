@@ -46,6 +46,7 @@ class Colors:
     YELLOW = '\033[33m'
     ENDC = '\033[0m'
     BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 
 class Offer:
     def __init__(self, company, title, location, date = None, description = None):
@@ -142,63 +143,75 @@ def parse_pages(n, filter = [], new = False, interactive = False):
     offers = [] # list of offers
 
     while page <= n:
-        r = urllib.urlopen(URL)
-        soup = BeautifulSoup(r, 'lxml')
+        try:
+            r = urllib.urlopen(URL)
+            soup = BeautifulSoup(r, 'lxml')
 
-        # extract information using tags and class names
-        offer_titles = soup.find_all("a", class_ = "c-search-result__title")
-        offer_url_list.extend([offer_titles[j]['href'] for j in range(len(offer_titles))])
-        offer_companies = soup.find_all("span", class_ = " ")
-        offer_locations = soup.find_all("span", class_ = " u-typo-italic ")
-        
-        if len(offer_titles) != len(offer_companies):
-            print("The number of offers (" + str(len(offer_titles)) + ") doesn't correspond to the number of companies (" + str(len(offer_companies)) + ")")
+            # extract information using tags and class names
+            offer_titles = soup.find_all("a", class_ = "c-search-result__title")
+            offer_companies = soup.find_all("span", class_ = " ")
+            offer_locations = soup.find_all("span", class_ = " u-typo-italic ")
+            
+            if len(offer_titles) != len(offer_companies):
+                print("The number of offers (" + str(len(offer_titles)) + ") doesn't correspond to the number of companies (" + str(len(offer_companies)) + ")")
+                exit(1)
+
+            # loop over found offers
+            k = 0
+            if page == 1:
+                k = 3
+            while k < len(offer_titles):
+                offer_url_list.append(offer_titles[k]['href'])
+                title = offer_titles[k].text
+                company = offer_companies[k].text
+                location = offer_locations[k].text
+                k += 1
+
+                # no need for the publication date
+                if title.find("Publi") != -1:
+                    title = title[:title.find("Publi") - 1]
+
+                offers.append(Offer(replace_accents(company),
+                                    replace_accents(title),
+                                    replace_accents(location)))
+
+            next_page()
+
+        except IOError:
+            print("There was an error opening \"{}\". " +
+            "Please check your internet connection and try again.").format(URL)
             exit(1)
-
-        # loop over found offers
-        k = 0
-        if page == 1:
-            k = 3
-        while k < len(offer_titles):
-            title = offer_titles[k].text
-            company = offer_companies[k].text
-            location = offer_locations[k].text
-            k += 1
-
-            # no need for the publication date
-            if title.find("Publi") != -1:
-                title = title[:title.find("Publi") - 1]
-
-            offers.append(Offer(replace_accents(company),
-                                replace_accents(title),
-                                replace_accents(location)))
-
-        next_page()
-
+            
     dump_content(offers, tmp_result_file)
     display_results(new, filter)
 
     if interactive:
         def select_offer(query):
-            offer_url = re.sub(r"\/stages-etudiants.*", offer_url_list[int(query)], URL)
-            r_offer = urllib.urlopen(offer_url)
-            r_soup=BeautifulSoup(r_offer, "lxml")
-            
-            print("=" * 150)
-            for l in range(len(r_soup.find_all('p'))):
-                print(Colors.YELLOW + (r_soup.find_all('p')[l].text) + Colors.ENDC)
-            print("=" * 150)
+            try:
+                offer_url = re.sub(r"\/stages-etudiants.*", offer_url_list[query], URL)
+                r_offer = urllib.urlopen(offer_url)
+                r_soup = BeautifulSoup(r_offer, "lxml")
+                
+                print("=" * 150)
+                print(Colors.BOLD + offer_url + Colors.ENDC)
+                paragraphs = r_soup.find_all('p')
+                for paragraph in paragraphs:
+                    print(Colors.YELLOW + paragraph.text + Colors.ENDC)
+                print("=" * 150)
 
+            except IOError:
+                print("There was an error opening \"{}\". " +
+                "Please check your internet connection and try again.").format(offer_url)
+                exit(1)
             
         while (True):
-            query = raw_input(Colors.UNDERLINE + "Enter your query (q to quit):" + Colors.ENDC + " ")
+            query = raw_input(Colors.UNDERLINE + "Enter your query (q/Q to quit):" + Colors.ENDC + " ")
             if (query.lower() == "q"):
                 break
+            if (int(query) < 7 + 10 * (n - 1) and int(query) >= 0):
+                select_offer(int(query))
             else:
-                if (int(query) < 10 * n):
-                    select_offer(query)
-                else:
-                    print("Wrong number, try again.")
+                print("Wrong input, try again.")
 
     # clear temporary file
     if os.path.exists(tmp_result_file):
@@ -219,44 +232,51 @@ def parse_days(n, filter = [], interactive = False):
     enough = False # trick to exit the two nested loops...
 
     while True:
-        r=urllib.urlopen(URL)
-        soup=BeautifulSoup(r, 'lxml')
+        try:
+            r=urllib.urlopen(URL)
+            soup=BeautifulSoup(r, 'lxml')
 
-        offer_titles = soup.find_all("a", class_ = "c-search-result__title")
-        offer_url_list.extend([offer_titles[j]['href'] for j in range(len(offer_titles))])
-        offer_companies = soup.find_all("span", class_ = " ")
-        offer_locations = soup.find_all("span", class_ = " u-typo-italic ")
+            offer_titles = soup.find_all("a", class_ = "c-search-result__title")
+            offer_url_list.extend([offer_titles[j]['href'] for j in range(len(offer_titles))])
+            offer_companies = soup.find_all("span", class_ = " ")
+            offer_locations = soup.find_all("span", class_ = " u-typo-italic ")
 
-        offer_dates = soup.find_all("span", class_ = "c-search-result__title__date")
-        parsed_dates = [parser.parse(date.text[re.search("\d", date.text).start():].replace(' ', '')) for date in offer_dates]
+            offer_dates = soup.find_all("span", class_ = "c-search-result__title__date")
+            parsed_dates = [parser.parse(date.text[re.search("\d", date.text).start():].replace(' ', '')) for date in offer_dates]
 
-        j = 0; k = 0
-        if page == 1:
-            k = 3
-        while k < len(offer_titles):
-            title = offer_titles[k].text
-            company = offer_companies[k].text
-            location = offer_locations[k].text
-            date = parsed_dates[j] 
+            j = 0; k = 0
+            if page == 1:
+                k = 3
+            while k < len(offer_titles):
+                title = offer_titles[k].text
+                company = offer_companies[k].text
+                location = offer_locations[k].text
+                date = parsed_dates[j] 
 
-            if title.find("Publi") != -1:
-                title = title[:title.find("Publi") - 1]
+                if title.find("Publi") != -1:
+                    title = title[:title.find("Publi") - 1]
 
-            if date >= today - margin and date <= today:
-                offers.append(Offer(replace_accents(company),
-                                    replace_accents(title),
-                                    replace_accents(location),
-                                    str(date)))
-            else:
-                enough = True
+                if date >= today - margin and date <= today:
+                    offers.append(Offer(replace_accents(company),
+                                        replace_accents(title),
+                                        replace_accents(location),
+                                        str(date)))
+                else:
+                    enough = True
+                    break
+                k += 1
+                j += 1
+
+            next_page()
+            if enough:
                 break
-            k += 1
-            j += 1
+        except IOError: 
+            print("There was an error opening \"{}\". " +
+            "Please check your internet connection and try again.").format(URL)
+            exit(1)
 
-        next_page()
-        if enough:
-            break
-
+    if len(offers) == 0:
+        exit(1)
     max_company_name_len = max([len(offer.company) for offer in offers])
     max_offer_title_len = max([len(offer.title) for offer in offers])
 
@@ -271,10 +291,6 @@ def parse_days(n, filter = [], interactive = False):
 
 #     else:
     
-
-def parse_company(company_name):
-    print("Not yet implemented")
-
 def main():
     args = Args()
     if args.number_of_days:
