@@ -6,7 +6,7 @@ I had the idea of writing this utility script when I was fed up with checking ev
 
 This Python script fetches available internship offers based on the user's criteria from [letudiant](http://letudiant.fr), a famous French magazine dedicated to students. It then displays the results on the terminal:
 
-![alt tag](https://raw.githubusercontent.com/Marrakchino/letudiant-cli-offer-scrapper/master/res/screenshot_2017-12-24%2017-18-13.png)
+![alt tag](https://raw.githubusercontent.com/Marrakchino/letudiant-cli-offer-scrapper/master/res/screenshot_2018-01-20.png)
 
 ## Install
 
