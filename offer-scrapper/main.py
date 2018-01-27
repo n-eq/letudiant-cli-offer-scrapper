@@ -28,15 +28,13 @@ from bs4 import BeautifulSoup
 import urllib
 import os
 import re
-import pickle
+# import json
 import time
 
 from args import Args
 
 page = 1
 URL = "http://jobs-stages.letudiant.fr/stages-etudiants/offres/domaines-103_129_165_111/niveaux-9_1/page-" + str(page) + ".html"
-result_file = "/home/marrakchino/github/letudiant-offers-scrapper/.results.txt"
-tmp_result_file = "/home/marrakchino/github/letudiant-offers-scrapper/.results.txt.tmp"
 
 class Colors:
     HEADER = '\033[95m'
@@ -49,10 +47,11 @@ class Colors:
     UNDERLINE = '\033[4m'
 
 class Offer:
-    def __init__(self, company, title, location, date = None, description = None):
+    def __init__(self, company, title, location, url, date = None, description = None):
         self.company = company
         self.title = title
         self.location = location
+        self.url = url
         if (date != None):
             self.date = date
         else:
@@ -63,10 +62,7 @@ class Offer:
             self.description = ""
 
     def __repr__(self):
-        return self.company + ' ({}, {}): {} - {}'.format(self.location, self.date, self.title, self.title, self.description)
-
-    def __str__(self):
-        return self.company + ' ({}, {}): {} - {}'.format(self.location, self.date, self.title, self.title, self.description)
+        return self.company + ' ({}, {}): {} - {}\n{}'.format(self.location, self.date, self.title, self.title, self.description, self.url)
 
 def replace_accents(s):
     replacements = {u"é": "e", u"è": "e", u"ê": "e", u"à": "a", u"â": "a", u"î": "i", u"û": "u", u"ô": "o"}
@@ -74,59 +70,21 @@ def replace_accents(s):
         s.replace(c, replacements[c])
     return s
 
-def dump_content(offers_to_dump, destination):
-    pickle.dump(offers_to_dump, open(destination, "wb"))
+def display_offers():
+    max_company_name_len = max([len(offer.company) for offer in offers_to_display])
+    max_offer_title_len = max([len(offer.title) for offer in offers_to_display])
 
-def display_results(new, filter):
-    if new:
-        previous_content = pickle.load(open(result_file, "rb"))
-        fresh_content = pickle.load(open(tmp_result_file, "rb"))
-        offers_list=[]
-        for offer in fresh_content:
-            if offer not in previous_content:
-                offers_list.append(offer)
-    else:
-        offers_list = pickle.load(open(tmp_result_file, "rb"))
-        os.rename(tmp_result_file, result_file)
+    for offer in range(len(offers_to_display)):
+        if offer == 0:
+            print(Colors.DARKBLUE + "Page 1")
+        if offer % 10 == 7:
+            print(Colors.DARKBLUE + "Page " + str(offer / 10 + 2))
 
-    max_company_name_len = max([len(offer.company) for offer in offers_list])
-    max_offer_title_len = max([len(offer.title) for offer in offers_list])
-
-    if filter == None:
-        for offer in range(len(offers_list)):
-            if offer == 0:
-                print(Colors.DARKBLUE + "Page 1")
-            if offer % 10 == 7:
-                print(Colors.DARKBLUE + "Page " + str(offer / 10 + 2))
-
-            print(Colors.HEADER + "[" + str(offer) + "]" + (" " if (len(offers_list) > 10 and offer < 10) else "") + offers_list[offer].company + 
-            " " * (max_company_name_len - len(offers_list[offer].company))+ 
-            Colors.ENDC + Colors.GREEN + offers_list[offer].title + 
-            " " * (max_offer_title_len - len(offers_list[offer].title))+ 
-            Colors.BLUE + offers_list[offer].location + Colors.ENDC).encode("utf-8")
-
-    else:
-        for offer in range(len(offers_list)):
-            title = offers_list[offer].title.lower().split()
-            company = offers_list[offer].company.lower().split()
-            location = offers_list[offer].location.lower().split()
-            for f in filter:
-                if offer == 0:
-                    print(Colors.DARKBLUE + "Page 1")
-                if offer % 10 == 7:
-                    print(Colors.DARKBLUE + "Page " + str(offer / 10 + 2))
-
-                f = f.lower().decode('utf-8')
-                if f in title or f in company or f in location:
-                    # TODO: use 're' to highlight the found filter keyword (in title, company name, or location)
-                    print(Colors.HEADER + "[" + str(offer) + "]" + 
-                    (" " if (len(offers_list) > 10 and offer < 10) else "") +
-                    offers_list[offer].company + 
-                    " " * (max_company_name_len - len(offers_list[offer].company))+ 
-                    Colors.ENDC + Colors.GREEN + offers_list[offer].title + 
-                    " " * (max_offer_title_len - len(offers_list[offer].title))+ 
-                    Colors.BLUE + offers_list[offer].location + Colors.ENDC).encode("utf-8")
-
+        print(Colors.HEADER + "[" + str(offer) + "]" + (" " if (len(offers_to_display) > 10 and offer < 10) else "") + offers_to_display[offer].company + 
+        " " * (max_company_name_len - len(offers_to_display[offer].company))+ 
+        Colors.ENDC + Colors.GREEN + offers_to_display[offer].title + 
+        " " * (max_offer_title_len - len(offers_to_display[offer].title))+ 
+        Colors.BLUE + offers_to_display[offer].location + Colors.ENDC).encode("utf-8")
 
 def next_page():
     global URL
@@ -134,12 +92,13 @@ def next_page():
     URL = URL.replace("page-" + str(page), "page-" + str(page+1))
     page += 1
 
+offers_to_display = []
+
 def parse_pages(n, filter = [], new = False, interactive = False):
     global page
     global URL
 
     offer_url_list = []
-    offers = [] # list of offers
 
     while page <= n:
         try:
@@ -151,28 +110,41 @@ def parse_pages(n, filter = [], new = False, interactive = False):
             offer_companies = soup.find_all("span", class_ = " ")
             offer_locations = soup.find_all("span", class_ = " u-typo-italic ")
             
-            if len(offer_titles) != len(offer_companies):
-                print("The number of offers (" + str(len(offer_titles)) + ") doesn't correspond to the number of companies (" + str(len(offer_companies)) + ")")
-                exit(1)
-
             # loop over found offers
             k = 0
             if page == 1:
                 k = 3
             while k < len(offer_titles):
-                offer_url_list.append(offer_titles[k]['href'])
-                title = offer_titles[k].text
-                company = offer_companies[k].text
-                location = offer_locations[k].text
+                url = re.sub(r"\/stages-etudiants.*", offer_titles[k]['href'], URL)
+                offer_url_list.append(url)
+                title = replace_accents(offer_titles[k].text)
+                company = replace_accents(offer_companies[k].text)
+                location = replace_accents(offer_locations[k].text)
                 k += 1
 
                 # no need for the publication date
                 if title.find("Publi") != -1:
                     title = title[:title.find("Publi") - 1]
+                
+                if filter == None:
+                    offers_to_display.append(Offer(company, title, location, url))
 
-                offers.append(Offer(replace_accents(company),
-                                    replace_accents(title),
-                                    replace_accents(location)))
+                else:
+                    print("filters = " + str(filter))
+                    append = False
+                    for f in filter:
+                        f = f.lower().decode('utf-8')
+                        if f in title:
+                            append = True
+                            title = title.replace(f, Colors.BOLD + f + Colors.ENDC + Colors.GREEN)
+                        if f in company: 
+                            append = True
+                            company = company.replace(f, Colors.BOLD + f + Colors.ENDC + Colors.HEADER)
+                        if f in location:
+                            append = True
+                            location = location.replace(f, Colors.BOLD + f + Colors.ENDC + Colors.BLUE)
+                        if append:
+                            offers_to_display.append(Offer(company, title, location, url))
 
             next_page()
 
@@ -181,13 +153,15 @@ def parse_pages(n, filter = [], new = False, interactive = False):
             "Please check your internet connection and try again.").format(URL)
             exit(1)
             
-    dump_content(offers, tmp_result_file)
-    display_results(new, filter)
+    if len(offers_to_display) == 0:
+        print("No offers were found.")
+        exit(0)
+    display_offers()
 
     if interactive:
         def select_offer(query):
             try:
-                offer_url = re.sub(r"\/stages-etudiants.*", offer_url_list[query], URL)
+                offer_url = offers_to_display[query].url
                 r_offer = urllib.urlopen(offer_url)
                 r_soup = BeautifulSoup(r_offer, "lxml")
                 
@@ -208,18 +182,18 @@ def parse_pages(n, filter = [], new = False, interactive = False):
                 "Please check your internet connection and try again.").format(offer_url)
                 exit(1)
             
+        first_time = 0
         while (True):
+            if first_time > 0:
+                display_offers()
             query = raw_input(Colors.UNDERLINE + "Enter your query (q/Q to quit):" + Colors.ENDC + " ")
             if (query.lower() == "q"):
                 break
-            if (int(query) < 7 + 10 * (n - 1) and int(query) >= 0):
+            if (int(query) < len(offers_to_display) and int(query) >= 0):
                 select_offer(int(query))
             else:
                 print("Wrong input, try again.")
-
-    # clear temporary file
-    if os.path.exists(tmp_result_file):
-        os.remove(tmp_result_file)
+            first_time += 1
 
 
 def parse_days(n, filter = [], interactive = False):
