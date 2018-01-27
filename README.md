@@ -23,8 +23,6 @@ You need to choose the URL from which you want to extract job offers, it's somet
 http://jobs-stages.letudiant.fr/stages-etudiants/offres/domaines-103_129_165_111/niveaux-3_2_9/page-1.html
 This variable should be stored as`URL` in `offer-scrapper/main.py`.
 
-Additionally, you need to choose a location for the `results` file (used for a `--new`less execution)
-
 ## Usage
 ```sh
 
@@ -39,9 +37,6 @@ $ python offer-scrapper/main.py --days 3
 
 # Display offers released during the 3 last days filtered by keywords
 $ python offer-scrapper/main.py --days 3 --filter keyword1 --filter keyword2	
-
-# Display only new offers (based on a previous search)
-$ python offer-scrapper/main.py --new
 
 # Display one page (Default)
 $ python offer-scrapper/main.py 
