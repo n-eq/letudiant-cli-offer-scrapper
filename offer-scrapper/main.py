@@ -191,12 +191,17 @@ def parse_pages(n, filter = [], new = False, interactive = False):
                 r_offer = urllib.urlopen(offer_url)
                 r_soup = BeautifulSoup(r_offer, "lxml")
                 
-                print("=" * 150)
+                columns = int(os.popen('stty size', 'r').read().split()[1])
+                print("=" * columns)
                 print(Colors.BOLD + offer_url + Colors.ENDC)
+                import textwrap
                 paragraphs = r_soup.find_all('p')
                 for paragraph in paragraphs:
-                    print(Colors.YELLOW + paragraph.text + Colors.ENDC)
-                print("=" * 150)
+                    print(Colors.YELLOW)
+                    for par in textwrap.wrap(paragraph.text, columns - 1):
+                        print(par)
+                    print(Colors.ENDC)
+                print("=" * columns)
 
             except IOError:
                 print("There was an error opening \"{}\". " +
