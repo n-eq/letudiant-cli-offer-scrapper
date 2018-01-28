@@ -94,7 +94,7 @@ def next_page():
 
 offers_to_display = []
 
-def parse_pages(n, filter = [], new = False, interactive = False):
+def parse_pages(n, filter = [], interactive = False):
     global page
     global URL
 
@@ -276,7 +276,7 @@ def main():
         parse_days(args.number_of_days, args.filter_search, args.interactive_mode)
 
     else: # Default
-        parse_pages(args.number_of_pages, args.filter_search, args.new, args.interactive_mode)
+        parse_pages(args.number_of_pages, args.filter_search, args.interactive_mode)
 
 if __name__ == "__main__":
     main()

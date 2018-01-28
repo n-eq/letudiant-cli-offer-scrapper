@@ -17,9 +17,6 @@ class Args():
         p.add_argument('-p', '--pages', type=int, default=1,
                 help='Number of pages to parse (1 by default).')
 
-        p.add_argument('-n', '--new', action='store_true',
-                help='Display only new offers (compared to a log file).')
-
         p.add_argument('-f', '--filter', action='append',
                 help='Add filters to the gathered offers.')
 
@@ -28,5 +25,4 @@ class Args():
         self.number_of_days = args.days
         self.number_of_pages = args.pages
         self.interactive_mode= args.interactive
-        self.new = args.new
         self.filter_search = args.filter
