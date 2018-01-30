@@ -128,7 +128,6 @@ def parse_pages(n, filter = [], interactive = False):
                     offers_to_display.append(Offer(company, title, location, url))
 
                 else:
-                    print("filters = " + str(filter))
                     append = False
                     for f in filter:
                         f = f.lower().decode('utf-8')
@@ -170,7 +169,9 @@ def parse_pages(n, filter = [], interactive = False):
                 paragraphs = r_soup.find_all('p')
                 for paragraph in paragraphs:
                     print(Colors.YELLOW)
-                    for par in textwrap.wrap(paragraph.text, columns - 1):
+                    # replace multiple blank lines with one, 
+                    # and remove multiple ocnsecutive white spaces for better rendering
+                    for par in textwrap.wrap(re.sub(r'\n+', '\n', ' '.join(paragraph.text.split())).strip(), columns - 1):
                         print(par)
                     print(Colors.ENDC)
                 print("=" * columns)
