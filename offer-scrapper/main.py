@@ -28,8 +28,6 @@ from bs4 import BeautifulSoup
 import urllib
 import os
 import re
-# import json
-import time
 
 from args import Args
 
