@@ -181,18 +181,17 @@ def parse_pages(n, filter = [], interactive = False):
                 "Please check your internet connection and try again.").format(offer_url)
                 exit(1)
             
-        first_time = 0
         while (True):
-            if first_time > 0:
-                display_offers()
-            query = raw_input(Colors.UNDERLINE + "Enter your query (q/Q to quit):" + Colors.ENDC + " ")
+            query = raw_input(Colors.UNDERLINE + "Enter your query: [q]uit, [l]ist, number:" + Colors.ENDC + " ")
             if (query.lower() == "q"):
                 break
+            if (query.lower() == "l"):
+                display_offers()
+                continue
             if (int(query) < len(offers_to_display) and int(query) >= 0):
                 select_offer(int(query))
             else:
                 print("Wrong input, try again.")
-            first_time += 1
 
 
 def parse_days(n, filter = [], interactive = False):
