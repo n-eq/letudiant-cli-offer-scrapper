@@ -1,0 +1,4 @@
+setuptools
+bs4
+lxml
+python >= 2.7.5
