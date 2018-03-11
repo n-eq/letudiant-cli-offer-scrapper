@@ -1,5 +1,8 @@
 # letudiant-cli-offer-scrapper
 
+[![Build Status](https://travis-ci.org/marrakchino/letudiant-cli-offer-scrapper.svg?branch=master)](https://travis-ci.org/marrakchino/letudiant-cli-offer-scrapper)
+
+
 **Necessity is the mother of invention.**
 
 I had the idea of writing this utility script when I was fed up with checking every time if there were any new internship offers available that suit my needs.
